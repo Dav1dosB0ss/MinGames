@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>МинИгры - Платформа мини-аркад</title>
+  <meta name="description" content="МинИгры: современная платформа браузерных мини-игр с достижениями, прогрессом и настройками.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="dark">
+  <div class="app-bg">
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+    <div class="bg-orb orb-c"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <header class="topbar glass">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">MG</div>
+      <div class="brand-text">
+        <h1>МинИгры</h1>
+        <p>Платформа классических аркад</p>
+      </div>
+    </div>
+
+    <nav class="main-nav" aria-label="Главная навигация">
+      <button class="nav-btn active" data-route="home" type="button">Главная</button>
+      <button class="nav-btn" data-route="games" type="button">Игры</button>
+      <button class="nav-btn" data-route="achievements" type="button">Достижения</button>
+      <button class="nav-btn" data-route="settings" type="button">Настройки</button>
+    </nav>
+
+    <div class="topbar-actions">
+      <div class="points-chip glass-soft">
+        <span class="chip-label">Очки</span>
+        <strong id="totalPoints">0</strong>
+      </div>
+      <button id="quickThemeToggle" class="icon-btn" type="button" title="Сменить тему" aria-label="Сменить тему">
+        <span class="icon icon-theme"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section id="route-home" class="route-section active">
+      <div class="hero glass">
+        <div class="hero-content">
+          <p class="eyebrow">Мини-платформа</p>
+          <h2>Играйте в классику с современным интерфейсом</h2>
+          <p class="hero-desc">
+            Пять аркад в одном месте: Tetris, Minesweeper, Snake, Flappy Bird и Pac-Man.
+            Выполняйте достижения, копите очки прогресса и открывайте награду за полное прохождение.
+          </p>
+          <div class="hero-cta">
+            <button class="btn primary" data-route-jump="games" type="button">Начать играть</button>
+            <button class="btn ghost" data-route-jump="achievements" type="button">Мои достижения</button>
+          </div>
+        </div>
+        <aside class="hero-stats">
+          <article class="stat-card glass-soft">
+            <p class="stat-label">Открыто достижений</p>
+            <p class="stat-value"><span id="homeUnlockedCount">0</span> / 50</p>
+          </article>
+          <article class="stat-card glass-soft">
+            <p class="stat-label">Общий прогресс</p>
+            <p class="stat-value" id="homeProgressPercent">0%</p>
+          </article>
+          <article class="stat-card glass-soft">
+            <p class="stat-label">Сумма очков</p>
+            <p class="stat-value" id="homePoints">0</p>
+          </article>
+        </aside>
+      </div>
+
+      <div class="home-grid">
+        <section class="panel glass">
+          <div class="panel-head">
+            <h3>Превью игр</h3>
+            <p>Плейсхолдеры для превью-изображений</p>
+          </div>
+          <div class="preview-grid">
+            <div class="preview-item">
+              <div class="preview-image" role="img" aria-label="Tetris preview placeholder">T</div>
+              <p>Tetris</p>
+            </div>
+            <div class="preview-item">
+              <div class="preview-image" role="img" aria-label="Minesweeper preview placeholder">M</div>
+              <p>Minesweeper</p>
+            </div>
+            <div class="preview-item">
+              <div class="preview-image" role="img" aria-label="Snake preview placeholder">S</div>
+              <p>Snake</p>
+            </div>
+            <div class="preview-item">
+              <div class="preview-image" role="img" aria-label="Flappy Bird preview placeholder">F</div>
+              <p>Flappy Bird</p>
+            </div>
+            <div class="preview-item">
+              <div class="preview-image" role="img" aria-label="Pac-Man preview placeholder">P</div>
+              <p>Pac-Man</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel glass">
+          <div class="panel-head">
+            <h3>Быстрый прогресс</h3>
+            <p>Заполняется по мере выполнения достижений</p>
+          </div>
+          <div class="global-progress">
+            <div class="global-progress-bar">
+              <div id="globalProgressFill" class="global-progress-fill"></div>
+            </div>
+            <p class="global-progress-text">
+              <strong id="globalProgressPercent">0%</strong>
+              <span id="globalProgressText">0 из 50 достижений</span>
+            </p>
+          </div>
+          <div class="home-actions">
+            <button class="btn secondary" data-route-jump="games" type="button">К списку игр</button>
+            <button class="btn secondary" data-route-jump="settings" type="button">Открыть настройки</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="route-games" class="route-section">
+      <div class="section-header">
+        <h2>Игры</h2>
+        <p>Запускайте игру внутри сайта, управляйте паузой и следите за счетом.</p>
+      </div>
+
+      <div class="games-layout">
+        <section class="games-list glass">
+          <article class="game-card active" data-game-id="tetris">
+            <div class="game-icon">T</div>
+            <div class="game-meta">
+              <h3>Tetris</h3>
+              <p>10x20 поле, тетрамино, уровни, очистка линий.</p>
+              <small>Лучший счет: <span data-best-score="tetris">0</span></small>
+            </div>
+            <button class="btn small primary launch-game-btn" data-game-id="tetris" type="button">Играть</button>
+          </article>
+
+          <article class="game-card" data-game-id="minesweeper">
+            <div class="game-icon">M</div>
+            <div class="game-meta">
+              <h3>Minesweeper</h3>
+              <p>16x16, 40 мин, флаги, таймер и проверка победы.</p>
+              <small>Лучший счет: <span data-best-score="minesweeper">0</span></small>
+            </div>
+            <button class="btn small primary launch-game-btn" data-game-id="minesweeper" type="button">Играть</button>
+          </article>
+
+          <article class="game-card" data-game-id="snake">
+            <div class="game-icon">S</div>
+            <div class="game-meta">
+              <h3>Snake</h3>
+              <p>Сетка, яблоки, рост змейки, ускорение и столкновения.</p>
+              <small>Лучший счет: <span data-best-score="snake">0</span></small>
+            </div>
+            <button class="btn small primary launch-game-btn" data-game-id="snake" type="button">Играть</button>
+          </article>
+
+          <article class="game-card" data-game-id="flappybird">
+            <div class="game-icon">F</div>
+            <div class="game-meta">
+              <h3>Flappy Bird</h3>
+              <p>Гравитация, прыжок, трубы, подсчет очков за проход.</p>
+              <small>Лучший счет: <span data-best-score="flappybird">0</span></small>
+            </div>
+            <button class="btn small primary launch-game-btn" data-game-id="flappybird" type="button">Играть</button>
+          </article>
+
+          <article class="game-card" data-game-id="pacman">
+            <div class="game-icon">P</div>
+            <div class="game-meta">
+              <h3>Pac-Man</h3>
+              <p>Лабиринт, точки, энерджайзеры и призраки с простым ИИ.</p>
+              <small>Лучший счет: <span data-best-score="pacman">0</span></small>
+            </div>
+            <button class="btn small primary launch-game-btn" data-game-id="pacman" type="button">Играть</button>
+          </article>
+        </section>
+
+        <section class="game-host glass" id="gameHost">
+          <header class="game-host-head">
+            <div>
+              <h3 id="activeGameTitle">Tetris</h3>
+              <p id="activeGameSubtitle">Готов к запуску</p>
+            </div>
+            <div class="game-live-metrics">
+              <div class="metric">
+                <span>Счет</span>
+                <strong id="liveScore">0</strong>
+              </div>
+              <div class="metric">
+                <span>Уровень</span>
+                <strong id="liveLevel">1</strong>
+              </div>
+              <div class="metric">
+                <span>Статус</span>
+                <strong id="liveStatus">Ожидание</strong>
+              </div>
+            </div>
+          </header>
+
+          <div class="game-controls">
+            <button id="startGameBtn" class="btn primary" type="button">Старт</button>
+            <button id="pauseGameBtn" class="btn secondary" type="button">Пауза</button>
+            <button id="resumeGameBtn" class="btn secondary" type="button">Продолжить</button>
+            <button id="restartGameBtn" class="btn ghost" type="button">Перезапуск</button>
+            <button id="pacmanSettingsBtn" class="btn ghost is-hidden" type="button">Настройки</button>
+          </div>
+
+          <div class="game-stage-wrap">
+            <div id="gameStage" class="game-stage" aria-live="polite"></div>
+            <div id="gameOverlay" class="game-overlay">
+              <div class="overlay-card glass-soft">
+                <p id="overlayLabel">Готовы начать?</p>
+                <h4 id="overlayTitle">Выберите игру и нажмите "Старт"</h4>
+                <p id="overlayText">У каждой игры есть свои правила, музыка и достижения.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="pacmanSettingsModal" class="pacman-settings-modal hidden" aria-hidden="true">
+            <div class="pacman-settings-backdrop" data-close-pacman-settings></div>
+            <section class="pacman-settings-panel glass" role="dialog" aria-modal="true" aria-labelledby="pacmanSettingsTitle">
+              <header class="pacman-settings-head">
+                <h4 id="pacmanSettingsTitle">Настройки Pac-Man</h4>
+                <button id="closePacmanSettingsBtn" class="icon-btn" type="button" aria-label="Закрыть">✕</button>
+              </header>
+
+              <div class="pacman-settings-grid">
+                <label class="setting-row">
+                  <span>Режим времени Power Pellet</span>
+                  <select id="pmPowerTimingMode">
+                    <option value="arcade">Оригинальный (по уровню)</option>
+                    <option value="custom">Фиксированное время</option>
+                  </select>
+                </label>
+
+                <label id="pmPowerDurationRow" class="setting-row">
+                  <span>Длительность Power Pellet (сек)</span>
+                  <input id="pmPowerDurationSec" type="number" min="0" max="30" step="0.5" value="6">
+                </label>
+
+                <label class="setting-row inline">
+                  <span>Восстановление Power Pellet</span>
+                  <input id="pmPelletRespawnEnabled" type="checkbox">
+                </label>
+
+                <label id="pmPelletRespawnRow" class="setting-row">
+                  <span>Перезарядка Power Pellet (сек)</span>
+                  <input id="pmPelletRespawnSec" type="number" min="1" max="120" step="1" value="20">
+                </label>
+
+                <label class="setting-row">
+                  <span>Количество жизней на старте</span>
+                  <input id="pmStartingLives" type="number" min="1" max="9" step="1" value="3">
+                </label>
+
+                <label class="setting-row inline">
+                  <span>Восстановление жизни на новом уровне</span>
+                  <input id="pmRestoreLifeEachLevel" type="checkbox">
+                </label>
+
+                <label id="pmMaxLivesRow" class="setting-row">
+                  <span>Максимум жизней</span>
+                  <input id="pmMaxLives" type="number" min="1" max="12" step="1" value="5">
+                </label>
+
+                <label class="setting-row">
+                  <span>Пауза призраков в начале жизни (сек)</span>
+                  <input id="pmGhostStartDelaySec" type="number" min="0" max="8" step="0.5" value="3">
+                </label>
+              </div>
+
+              <footer class="pacman-settings-actions">
+                <button id="applyPacmanSettingsBtn" class="btn primary" type="button">Применить</button>
+                <button class="btn ghost" type="button" data-close-pacman-settings>Закрыть</button>
+              </footer>
+            </section>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="route-achievements" class="route-section">
+      <div class="section-header">
+        <h2>Достижения</h2>
+        <p>50 достижений, уровни редкости, очки прогресса и глобальная награда.</p>
+      </div>
+
+      <div class="achievement-summary glass">
+        <article class="summary-card">
+          <p>Открыто</p>
+          <strong id="achievementUnlockedCount">0 / 50</strong>
+        </article>
+        <article class="summary-card">
+          <p>Очки достижений</p>
+          <strong id="achievementTotalPoints">0</strong>
+        </article>
+        <article class="summary-card">
+          <p>Редкие + легендарные</p>
+          <strong id="achievementRareLegendary">0</strong>
+        </article>
+        <article class="summary-card">
+          <p>Глобальный прогресс</p>
+          <strong id="achievementProgressPercent">0%</strong>
+        </article>
+      </div>
+
+      <div class="achievement-progress glass">
+        <div class="global-progress-bar large">
+          <div id="achievementProgressFill" class="global-progress-fill"></div>
+        </div>
+        <p id="achievementProgressCaption">Выполнено 0 из 50 достижений</p>
+      </div>
+
+      <div id="specialRewardPanel" class="special-reward glass hidden" aria-live="polite">
+        <div class="reward-badge" aria-hidden="true">★</div>
+        <div class="reward-copy">
+          <h3>Золотой Бейдж МинИгры</h3>
+          <p>Открыты все достижения. Вы получили специальную награду платформы.</p>
+        </div>
+        <button id="playRewardAnimationBtn" class="btn primary" type="button">Запустить анимацию</button>
+      </div>
+
+      <div class="achievement-filters">
+        <button class="chip-btn active" data-achievement-filter="all" type="button">Все</button>
+        <button class="chip-btn" data-achievement-filter="tetris" type="button">Tetris</button>
+        <button class="chip-btn" data-achievement-filter="minesweeper" type="button">Minesweeper</button>
+        <button class="chip-btn" data-achievement-filter="snake" type="button">Snake</button>
+        <button class="chip-btn" data-achievement-filter="flappybird" type="button">Flappy Bird</button>
+        <button class="chip-btn" data-achievement-filter="pacman" type="button">Pac-Man</button>
+        <button class="chip-btn" data-achievement-filter="unlocked" type="button">Только открытые</button>
+        <button class="chip-btn" data-achievement-filter="locked" type="button">Только закрытые</button>
+      </div>
+
+      <div id="achievementList" class="achievement-grid"></div>
+    </section>
+
+    <section id="route-settings" class="route-section">
+      <div class="section-header">
+        <h2>Настройки</h2>
+        <p>Тема, звук, музыка и управление состоянием прогресса.</p>
+      </div>
+
+      <div class="settings-layout">
+        <section class="settings-panel glass">
+          <h3>Внешний вид</h3>
+          <div class="setting-row">
+            <label for="themeSelect">Тема интерфейса</label>
+            <select id="themeSelect">
+              <option value="dark">Темная</option>
+              <option value="light">Светлая</option>
+            </select>
+          </div>
+          <div class="setting-row inline">
+            <span>Быстрый переключатель темы</span>
+            <button id="toggleThemeBtn" class="btn secondary" type="button">Сменить тему</button>
+          </div>
+        </section>
+
+        <section class="settings-panel glass">
+          <h3>Аудио</h3>
+          <div class="setting-row">
+            <label for="masterVolume">Общая громкость</label>
+            <input id="masterVolume" type="range" min="0" max="100" value="70">
+          </div>
+          <div class="setting-row">
+            <label for="musicVolume">Громкость музыки</label>
+            <input id="musicVolume" type="range" min="0" max="100" value="55">
+          </div>
+          <div class="setting-row">
+            <label for="sfxVolume">Громкость эффектов</label>
+            <input id="sfxVolume" type="range" min="0" max="100" value="70">
+          </div>
+          <div class="setting-row inline">
+            <span>Включить музыку</span>
+            <label class="switch">
+              <input id="musicEnabled" type="checkbox" checked>
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row inline">
+            <span>Включить эффекты</span>
+            <label class="switch">
+              <input id="sfxEnabled" type="checkbox" checked>
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+          <div class="settings-actions">
+            <button id="testSfxBtn" class="btn secondary" type="button">Тест эффекта</button>
+            <button id="testMusicBtn" class="btn secondary" type="button">Тест музыки</button>
+          </div>
+        </section>
+
+        <section class="settings-panel glass">
+          <h3>Сохранения</h3>
+          <p class="muted">Состояние прогресса и настройки автоматически сохраняются в localStorage.</p>
+          <div class="settings-actions vertical">
+            <button id="exportSaveBtn" class="btn ghost" type="button">Экспортировать сохранение</button>
+            <button id="importSaveBtn" class="btn ghost" type="button">Импортировать сохранение</button>
+            <button id="resetProgressBtn" class="btn danger" type="button">Сбросить прогресс</button>
+          </div>
+          <textarea id="saveDataField" rows="9" placeholder="Здесь появится JSON с сохранением"></textarea>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <aside id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></aside>
+  <div id="confettiLayer" class="confetti-layer" aria-hidden="true"></div>
+
+  <template id="achievementCardTemplate">
+    <article class="achievement-card">
+      <div class="achievement-icon-wrap">
+        <span class="achievement-icon"></span>
+      </div>
+      <div class="achievement-main">
+        <div class="achievement-head">
+          <h4 class="achievement-title"></h4>
+          <span class="achievement-rarity"></span>
+        </div>
+        <p class="achievement-description"></p>
+        <div class="achievement-meta">
+          <span class="achievement-points"></span>
+          <span class="achievement-game"></span>
+        </div>
+        <div class="achievement-progress-track">
+          <div class="achievement-progress-fill"></div>
+        </div>
+        <p class="achievement-progress-text"></p>
+      </div>
+    </article>
+  </template>
+
+  <script src="games/tetris.js" defer></script>
+  <script src="games/minesweeper.js" defer></script>
+  <script src="games/snake.js" defer></script>
+  <script src="games/flappybird.js" defer></script>
+  <script src="games/pacman.js" defer></script>
+  <script src="main.js" defer></script>
+</body>
+</html>
