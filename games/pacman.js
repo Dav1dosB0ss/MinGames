@@ -8,7 +8,7 @@
   "#.###.#.#####.#.###",
   "#.....#...#...#...#",
   "#####.###.#.###.###",
-  "#...#.....P.....#.#",
+  " ...#.....P.....#. ",
   "###.#.###GGG###.#.#",
   "#...#...#####...#.#",
   "#.#####...#...###.#",
@@ -18,10 +18,9 @@
   "#.#.#.#######.#.#.#",
   "#.#...........#.#.#",
   "#.#####.#.#.#####.#",
-  "#.......#.#.......#",
+  "#.......#.......#.#",
   "###################"
 ];
-
 const DIRS = [
   { x: 0, y: -1, key: "up" },
   { x: 1, y: 0, key: "right" },
@@ -49,7 +48,11 @@ const PACMAN_RUNTIME_DEFAULTS = {
   startingLives: 3,
   restoreLifeEachLevel: false,
   maxLives: 5,
-  ghostStartDelaySec: 3
+  ghostStartDelaySec: 3,
+  blinkyReleaseSec: 0,
+  pinkyReleaseSec: 1.5,
+  inkyReleaseSec: 3,
+  clydeReleaseSec: 3
 };
 
 function opposite(a, b) {
@@ -102,6 +105,13 @@ class PacmanGame {
     this.lives = this.settings.startingLives;
     this.powerMsLeft = 0;
     this.powerTicks = 0;
+    this.ghostEatCombo = 0;
+    this.wasPowerActive = false;
+    this.extraLifeAwarded = false;
+    this.fruit = null;
+    this.fruitTimerMs = 0;
+    this.fruitSpawnFlags = [false, false];
+    this.fruitSpawnTile = null;
     // Difficulty tuning knobs:
     this.frightenedGhostSpeedMultiplier = 0.86;
     this.stepMs = 260;
@@ -140,6 +150,10 @@ class PacmanGame {
       Math.max(1, Math.min(12, Math.round(Number(source.maxLives ?? PACMAN_RUNTIME_DEFAULTS.maxLives) || startingLives)))
     );
     const ghostStartDelaySec = Math.max(0, Math.min(8, Number(source.ghostStartDelaySec ?? PACMAN_RUNTIME_DEFAULTS.ghostStartDelaySec) || 0));
+    const blinkyReleaseSec = Math.max(0, Math.min(20, Number(source.blinkyReleaseSec ?? PACMAN_RUNTIME_DEFAULTS.blinkyReleaseSec) || 0));
+    const pinkyReleaseSec = Math.max(0, Math.min(20, Number(source.pinkyReleaseSec ?? PACMAN_RUNTIME_DEFAULTS.pinkyReleaseSec) || 0));
+    const inkyReleaseSec = Math.max(0, Math.min(20, Number(source.inkyReleaseSec ?? PACMAN_RUNTIME_DEFAULTS.inkyReleaseSec) || 0));
+    const clydeReleaseSec = Math.max(0, Math.min(20, Number(source.clydeReleaseSec ?? PACMAN_RUNTIME_DEFAULTS.clydeReleaseSec) || 0));
 
     return {
       powerTimingMode,
@@ -149,7 +163,11 @@ class PacmanGame {
       startingLives,
       restoreLifeEachLevel,
       maxLives,
-      ghostStartDelaySec
+      ghostStartDelaySec,
+      blinkyReleaseSec,
+      pinkyReleaseSec,
+      inkyReleaseSec,
+      clydeReleaseSec
     };
   }
 
@@ -169,6 +187,14 @@ class PacmanGame {
     this.updateHud();
   }
 
+  getReleaseDelayMsForGhost(id) {
+    if (id === "blinky") return this.settings.blinkyReleaseSec * 1000;
+    if (id === "pinky") return this.settings.pinkyReleaseSec * 1000;
+    if (id === "inky") return this.settings.inkyReleaseSec * 1000;
+    if (id === "clyde") return this.settings.clydeReleaseSec * 1000;
+    return 0;
+  }
+
   getStartFreezeMs() {
     return this.settings.ghostStartDelaySec * 1000;
   }
@@ -178,6 +204,45 @@ class PacmanGame {
       return Math.round(this.settings.customPowerDurationSec * 1000);
     }
     return this.getPowerDurationMsForLevel(this.level);
+  }
+
+  getFruitForLevel(level) {
+    const lv = Math.max(1, Math.floor(level || 1));
+    if (lv === 1) return { name: "Cherry", points: 100, color: "#ff5f6d" };
+    if (lv === 2) return { name: "Strawberry", points: 300, color: "#ff7ad1" };
+    if (lv === 3 || lv === 4) return { name: "Orange", points: 500, color: "#ffb347" };
+    if (lv === 5 || lv === 6) return { name: "Apple", points: 700, color: "#ff6b6b" };
+    if (lv === 7 || lv === 8) return { name: "Melon", points: 1000, color: "#67f3a2" };
+    if (lv === 9 || lv === 10) return { name: "Galaxian", points: 2000, color: "#7fd7ff" };
+    if (lv === 11 || lv === 12) return { name: "Bell", points: 3000, color: "#ffd36b" };
+    return { name: "Key", points: 5000, color: "#e7efff" };
+  }
+
+  getFruitSpawnThresholds() {
+    const total = this.goalDotsTotal || 0;
+    if (total <= 0) return [0, 0];
+    const first = Math.max(1, Math.round(total * 0.292));
+    const second = Math.max(first + 1, Math.round(total * 0.708));
+    return [first, second];
+  }
+
+  spawnFruit() {
+    if (!this.fruitSpawnTile) return;
+    const fruit = this.getFruitForLevel(this.level);
+    this.fruit = {
+      ...fruit,
+      x: this.fruitSpawnTile.x,
+      y: this.fruitSpawnTile.y
+    };
+    this.fruitTimerMs = 9000;
+  }
+
+  maybeAwardExtraLife() {
+    if (this.extraLifeAwarded) return;
+    if (this.score < 10000) return;
+    this.extraLifeAwarded = true;
+    this.lives = Math.min(this.settings.maxLives, this.lives + 1);
+    this.callbacks.onSfx?.("achievement");
   }
 
   mount(container) {
@@ -278,6 +343,10 @@ class PacmanGame {
         { x: this.pacmanSpawn.x + 1, y: this.pacmanSpawn.y - 2 }
       ];
     }
+    this.fruitSpawnTile = this.findNearestWalkableTile(
+      Math.floor(this.width / 2),
+      Math.floor(this.height / 2)
+    );
   }
 
   resetGhostModeCycle() {
@@ -313,7 +382,11 @@ class PacmanGame {
   }
 
   isBaseWall(x, y) {
-    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return true;
+    if (x < 0 || x >= this.width) {
+      if (y === 9) return false;
+      return true;
+    }
+    if (y < 0 || y >= this.height) return true;
     return this.baseGrid[y][x] === 1;
   }
 
@@ -454,6 +527,8 @@ class PacmanGame {
 
     this.ghosts = definitions.map((definition, idx) => {
       const spawn = spawnSlots[idx] || this.findNearestWalkableTile(this.pacmanSpawn.x + idx, this.pacmanSpawn.y);
+      const releaseDelayMs = this.getReleaseDelayMsForGhost(definition.id);
+      const released = releaseDelayMs <= 0;
       return {
         ...definition,
         x: spawn.x,
@@ -466,6 +541,9 @@ class PacmanGame {
         eyePhase: Math.random() * Math.PI * 2,
         lastDecisionTile: null,
         stuckFrames: 0,
+        state: "normal",
+        released, // Start explicitly as non-released unless time is 0 
+        releaseTimerMs: released ? 0 : releaseDelayMs,
         target: { ...definition.scatterTarget },
         mode: this.ghostMode
       };
@@ -529,7 +607,11 @@ class PacmanGame {
   }
 
   tileIsWall(x, y) {
-    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return true;
+    if (x < 0 || x >= this.width) {
+      if (y === 9) return false;
+      return true;
+    }
+    if (y < 0 || y >= this.height) return true;
     return this.grid[y][x] === 1;
   }
 
@@ -579,6 +661,11 @@ class PacmanGame {
       entity[axis] += entity.dir[axis] * step;
       remaining -= step;
 
+      if (axis === "x") {
+        if (entity.x < -0.5) entity.x += this.width;
+        else if (entity.x >= this.width - 0.5) entity.x -= this.width;
+      }
+
       if (Math.abs(step - distToNextCenter) < 0.000001) {
         this.snapToCenter(entity);
       }
@@ -586,14 +673,20 @@ class PacmanGame {
   }
 
   resetState() {
+    this.level = 1;
     this.resetBoard();
     this.resetGhostModeCycle();
     this.resetActors();
     this.score = 0;
-    this.level = 1;
     this.lives = this.settings.startingLives;
     this.powerMsLeft = 0;
     this.powerTicks = 0;
+    this.ghostEatCombo = 0;
+    this.wasPowerActive = false;
+    this.extraLifeAwarded = false;
+    this.fruit = null;
+    this.fruitTimerMs = 0;
+    this.fruitSpawnFlags = [false, false];
     this.stepMs = 260;
     this.updateSpeeds();
     this.elapsed = 0;
@@ -715,6 +808,7 @@ class PacmanGame {
       this.score += 50;
       this.powerMsLeft = this.getActivePowerDurationMs();
       this.powerTicks = Math.ceil(this.powerMsLeft / 1000);
+      this.ghostEatCombo = 0;
       this.schedulePelletRespawn(px, py);
       this.callbacks.onMetric?.("pacman.powerPellets", 1, "add");
       this.callbacks.onSfx?.("power");
@@ -729,6 +823,7 @@ class PacmanGame {
 
     this.callbacks.onMetric?.("pacman.score", this.score, "max");
     this.callbacks.onScore?.(this.score);
+    this.maybeAwardExtraLife();
   }
 
   validGhostDirs(ghost) {
@@ -751,8 +846,11 @@ class PacmanGame {
 
       for (let i = 0; i < DIRS.length; i += 1) {
         const dir = DIRS[i];
-        const nx = current.x + dir.x;
+        let nx = current.x + dir.x;
         const ny = current.y + dir.y;
+        if (nx < 0) nx += this.width;
+        else if (nx >= this.width) nx -= this.width;
+
         if (this.tileIsWall(nx, ny)) continue;
         if (distances[ny][nx] <= base + 1) continue;
         distances[ny][nx] = base + 1;
@@ -821,16 +919,34 @@ class PacmanGame {
     let filtered = options.filter((dir) => !opposite(dir, ghost.dir));
     if (filtered.length === 0) filtered = options;
 
-    const target = powerActive
-      ? this.normalizeTargetTile(Math.round(this.pacman.x), Math.round(this.pacman.y))
-      : this.getGhostTargetByMode(ghost);
+    if (ghost.state !== "eaten") {
+      if (powerActive) {
+        ghost.state = "frightened";
+      } else if (!powerActive) {
+        ghost.state = "normal";
+      }
+    }
+
+    if (ghost.state === "eaten") {
+      const target = this.normalizeTargetTile(ghost.homeX, ghost.homeY);
+      ghost.target = { ...target };
+      ghost.mode = "EATEN";
+      return this.pickBestDirTowardTarget(filtered, ghostX, ghostY, target);
+    }
+
+    if (powerActive) {
+      ghost.mode = "FRIGHTENED";
+      return randomItem(filtered);
+    }
+
+    const target = this.getGhostTargetByMode(ghost);
     ghost.target = { ...target };
-    ghost.mode = powerActive ? "FRIGHTENED" : this.ghostMode;
+    ghost.mode = this.ghostMode;
     const targetX = target.x;
     const targetY = target.y;
     const distanceMap = this.buildDistanceMap(targetX, targetY);
     let best = filtered[0];
-    let bestScore = powerActive ? -Infinity : Infinity;
+    let bestScore = Infinity;
     let bestPriority = TURN_PRIORITY[best.key] ?? 99;
 
     filtered.forEach((dir) => {
@@ -842,13 +958,7 @@ class PacmanGame {
       }
       const priority = TURN_PRIORITY[dir.key] ?? 99;
 
-      if (powerActive) {
-        if (dist > bestScore || (dist === bestScore && priority < bestPriority)) {
-          bestScore = dist;
-          best = dir;
-          bestPriority = priority;
-        }
-      } else if (dist < bestScore || (dist === bestScore && priority < bestPriority)) {
+      if (dist < bestScore || (dist === bestScore && priority < bestPriority)) {
         bestScore = dist;
         best = dir;
         bestPriority = priority;
@@ -858,8 +968,59 @@ class PacmanGame {
     return best || randomItem(filtered);
   }
 
+  pickBestDirTowardTarget(options, ghostX, ghostY, target) {
+    const targetX = target.x;
+    const targetY = target.y;
+    const distanceMap = this.buildDistanceMap(targetX, targetY);
+    let best = options[0];
+    let bestScore = Infinity;
+    let bestPriority = TURN_PRIORITY[best.key] ?? 99;
+
+    options.forEach((dir) => {
+      const nx = ghostX + dir.x;
+      const ny = ghostY + dir.y;
+      let dist = this.manhattanDistance(nx, ny, targetX, targetY);
+      if (distanceMap && Number.isFinite(distanceMap[ny]?.[nx])) {
+        dist = distanceMap[ny][nx];
+      }
+      const priority = TURN_PRIORITY[dir.key] ?? 99;
+      if (dist < bestScore || (dist === bestScore && priority < bestPriority)) {
+        bestScore = dist;
+        best = dir;
+        bestPriority = priority;
+      }
+    });
+
+    return best || randomItem(options);
+  }
+
+  updateGhostReleaseTimers(deltaMs) {
+    if (!Number.isFinite(deltaMs) || deltaMs <= 0) return;
+    const powerActive = this.powerMsLeft > 0;
+    this.ghosts.forEach((ghost) => {
+      // Update frightened state for unreleased ghosts too
+      if (ghost.state !== "eaten") {
+        if (powerActive) {
+          ghost.state = "frightened";
+        } else {
+          ghost.state = "normal";
+        }
+      }
+      if (ghost.released) return;
+      ghost.releaseTimerMs = Math.max(0, (ghost.releaseTimerMs || 0) - deltaMs);
+      if (ghost.releaseTimerMs <= 0) {
+        ghost.released = true;
+        ghost.dir = { ...DIRS[Math.floor(Math.random() * DIRS.length)] };
+        ghost.lastDecisionTile = null;
+      }
+    });
+  }
+
   moveGhosts(dtSec) {
     this.ghosts.forEach((ghost) => {
+      if (!ghost.released) {
+        return;
+      }
       ghost.prevX = ghost.x;
       ghost.prevY = ghost.y;
 
@@ -873,7 +1034,9 @@ class PacmanGame {
         if (dotsRatio <= 0.35) speed *= 1.08;
         if (dotsRatio <= 0.18) speed *= 1.06;
       }
-      if (this.powerMsLeft > 0) {
+      if (ghost.state === "eaten") {
+        speed *= 1.5;
+      } else if (this.powerMsLeft > 0) {
         speed *= this.frightenedGhostSpeedMultiplier;
       }
       this.moveEntityContinuous(ghost, speed, dtSec, null, (entity, tileX, tileY) => {
@@ -888,6 +1051,17 @@ class PacmanGame {
         ghost.lastDecisionTile = null;
       }
       ghost.eyePhase += dtSec * 7;
+
+      if (ghost.state === "eaten" && this.isCentered(ghost, 0.2)) {
+        const gx = Math.round(ghost.x);
+        const gy = Math.round(ghost.y);
+        if (gx === ghost.homeX && gy === ghost.homeY) {
+          ghost.state = "normal";
+          ghost.dir = { ...DIRS[Math.floor(Math.random() * DIRS.length)] };
+          ghost.lastDecisionTile = null;
+          ghost.stuckFrames = 0;
+        }
+      }
 
       const moved = Math.abs(ghost.x - ghost.prevX) + Math.abs(ghost.y - ghost.prevY);
       ghost.stuckFrames = moved < 0.0005 ? (ghost.stuckFrames || 0) + 1 : 0;
@@ -910,24 +1084,25 @@ class PacmanGame {
   handleCollisions() {
     for (let i = 0; i < this.ghosts.length; i += 1) {
       const ghost = this.ghosts[i];
+      if (!ghost.released) continue;
+      if (ghost.state === "eaten") continue;
       const dx = ghost.x - this.pacman.x;
       const dy = ghost.y - this.pacman.y;
       const hit = dx * dx + dy * dy <= 0.36;
       if (!hit) continue;
 
       if (this.powerMsLeft > 0) {
-        this.score += 200;
-        ghost.x = ghost.homeX;
-        ghost.y = ghost.homeY;
-        ghost.prevX = ghost.homeX;
-        ghost.prevY = ghost.homeY;
-        ghost.dir = { ...DIRS[Math.floor(Math.random() * DIRS.length)] };
+        const comboPoints = 200 * Math.pow(2, this.ghostEatCombo);
+        this.ghostEatCombo = Math.min(this.ghostEatCombo + 1, 3);
+        this.score += comboPoints;
+        ghost.state = "eaten";
         ghost.lastDecisionTile = null;
         ghost.stuckFrames = 0;
         this.callbacks.onMetric?.("pacman.ghostsEaten", 1, "add");
         this.callbacks.onMetric?.("pacman.score", this.score, "max");
         this.callbacks.onScore?.(this.score);
         this.callbacks.onSfx?.("achievement");
+        this.maybeAwardExtraLife();
         continue;
       }
 
@@ -961,6 +1136,11 @@ class PacmanGame {
     this.updateSpeeds();
     this.powerMsLeft = 0;
     this.powerTicks = 0;
+    this.ghostEatCombo = 0;
+    this.wasPowerActive = false;
+    this.fruit = null;
+    this.fruitTimerMs = 0;
+    this.fruitSpawnFlags = [false, false];
     if (this.settings.restoreLifeEachLevel) {
       this.lives = Math.min(this.settings.maxLives, this.lives + 1);
     } else {
@@ -979,21 +1159,56 @@ class PacmanGame {
   updateGame(dtSec, deltaMs) {
     this.moveEntityContinuous(this.pacman, this.pacmanSpeed, dtSec, this.pacman.nextDir);
     this.consumeTile();
+    const dotsEaten = Math.max(0, this.goalDotsTotal - this.dotsLeft);
+    const [spawnA, spawnB] = this.getFruitSpawnThresholds();
+    if (!this.fruit && !this.fruitSpawnFlags[0] && dotsEaten >= spawnA && spawnA > 0) {
+      this.spawnFruit();
+      this.fruitSpawnFlags[0] = true;
+    } else if (!this.fruit && !this.fruitSpawnFlags[1] && dotsEaten >= spawnB && spawnB > 0) {
+      this.spawnFruit();
+      this.fruitSpawnFlags[1] = true;
+    }
+    if (this.fruit) {
+      this.fruitTimerMs = Math.max(0, this.fruitTimerMs - deltaMs);
+      if (this.fruitTimerMs <= 0) {
+        this.fruit = null;
+      }
+    }
     this.updateGhostMode(deltaMs);
 
     this.ghostFreezeMs = Math.max(0, this.ghostFreezeMs - deltaMs);
     if (this.ghostFreezeMs <= 0) {
+      this.updateGhostReleaseTimers(deltaMs);
       this.moveGhosts(dtSec);
     }
 
     const interrupted = this.handleCollisions();
     if (interrupted) return;
 
+    if (this.fruit && this.isCentered(this.pacman, 0.2)) {
+      const px = Math.round(this.pacman.x);
+      const py = Math.round(this.pacman.y);
+      if (px === this.fruit.x && py === this.fruit.y) {
+        this.score += this.fruit.points;
+        this.callbacks.onMetric?.("pacman.score", this.score, "max");
+        this.callbacks.onScore?.(this.score);
+        this.callbacks.onMetric?.("pacman.fruitsEaten", 1, "add");
+        this.callbacks.onSfx?.("achievement");
+        this.fruit = null;
+        this.fruitTimerMs = 0;
+        this.maybeAwardExtraLife();
+      }
+    }
+
+    const wasPowerActive = this.powerMsLeft > 0;
     if (this.powerMsLeft > 0) {
       this.powerMsLeft = Math.max(0, this.powerMsLeft - deltaMs);
       this.powerTicks = Math.ceil(this.powerMsLeft / 1000);
     } else {
       this.powerTicks = 0;
+    }
+    if (wasPowerActive && this.powerMsLeft <= 0) {
+      this.ghostEatCombo = 0;
     }
 
     if (this.dotsLeft <= 0) {
@@ -1122,8 +1337,24 @@ class PacmanGame {
       const bob = Math.sin(performance.now() * 0.012 + ghost.eyePhase) * 1.2;
       const y = ghost.y * this.tile + this.tile / 2 + 2 + bob;
       const r = this.tile * 0.39;
-      const frightened = this.powerMsLeft > 0;
-      ctx.fillStyle = frightened ? "#1438c9" : ghost.color;
+      if (ghost.state === "eaten") {
+        ctx.fillStyle = "#f7fbff";
+        ctx.beginPath();
+        ctx.ellipse(x - 6, y - 2, 4, 4.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + 6, y - 2, 4, 4.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#1b2f53";
+        ctx.beginPath();
+        ctx.arc(x - 6 + ghost.dir.x * 1.5, y - 1 + ghost.dir.y * 1.5, 2, 0, Math.PI * 2);
+        ctx.arc(x + 6 + ghost.dir.x * 1.5, y - 1 + ghost.dir.y * 1.5, 2, 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
+
+      const bodyColor = ghost.state === "frightened" ? (this.powerMsLeft < 2000 && Math.floor(performance.now() / 200) % 2 === 0 ? "#f4f8ff" : "#1438c9") : ghost.color;
+
+      ctx.fillStyle = bodyColor;
       ctx.beginPath();
       ctx.arc(x, y - 2, r, Math.PI, 0);
       ctx.lineTo(x + r, y + r);
@@ -1136,14 +1367,17 @@ class PacmanGame {
       ctx.closePath();
       ctx.fill();
 
-      if (frightened) {
-        ctx.fillStyle = "#ffffff";
+      if (ghost.state === "frightened") {
+        const flash = this.powerMsLeft < 2000 && Math.floor(performance.now() / 200) % 2 === 0;
+        const faceColor = flash ? "#1438c9" : "#f4f8ff";
+
+        ctx.fillStyle = faceColor;
         ctx.beginPath();
         ctx.arc(x - 6, y - 1, 1.8, 0, Math.PI * 2);
         ctx.arc(x + 6, y - 1, 1.8, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = "#ffffff";
+        ctx.strokeStyle = faceColor;
         ctx.lineWidth = 2;
         ctx.lineJoin = "round";
         ctx.beginPath();
@@ -1219,3 +1453,5 @@ class PacmanGame {
 }
 
 window.PacmanGame = PacmanGame;
+
+

@@ -8,7 +8,11 @@ const DEFAULT_PACMAN_SETTINGS = {
   startingLives: 3,
   restoreLifeEachLevel: false,
   maxLives: 5,
-  ghostStartDelaySec: 3
+  ghostStartDelaySec: 3,
+  blinkyReleaseSec: 0,
+  pinkyReleaseSec: 1.5,
+  inkyReleaseSec: 6,
+  clydeReleaseSec: 9
 };
 
 const GAME_CATALOG = {
@@ -179,6 +183,10 @@ function normalizePacmanSettings(rawSettings) {
   const rawMaxLives = clamp(Math.round(Number(source.maxLives ?? DEFAULT_PACMAN_SETTINGS.maxLives)), 1, 12);
   const maxLives = Math.max(startingLives, rawMaxLives);
   const ghostStartDelaySec = clamp(Number(source.ghostStartDelaySec ?? DEFAULT_PACMAN_SETTINGS.ghostStartDelaySec), 0, 8);
+  const blinkyReleaseSec = clamp(Number(source.blinkyReleaseSec ?? DEFAULT_PACMAN_SETTINGS.blinkyReleaseSec), 0, 20);
+  const pinkyReleaseSec = clamp(Number(source.pinkyReleaseSec ?? DEFAULT_PACMAN_SETTINGS.pinkyReleaseSec), 0, 20);
+  const inkyReleaseSec = clamp(Number(source.inkyReleaseSec ?? DEFAULT_PACMAN_SETTINGS.inkyReleaseSec), 0, 20);
+  const clydeReleaseSec = clamp(Number(source.clydeReleaseSec ?? DEFAULT_PACMAN_SETTINGS.clydeReleaseSec), 0, 20);
 
   return {
     powerTimingMode,
@@ -188,7 +196,11 @@ function normalizePacmanSettings(rawSettings) {
     startingLives,
     restoreLifeEachLevel,
     maxLives,
-    ghostStartDelaySec
+    ghostStartDelaySec,
+    blinkyReleaseSec,
+    pinkyReleaseSec,
+    inkyReleaseSec,
+    clydeReleaseSec
   };
 }
 
@@ -573,6 +585,10 @@ class MiniGamesApp {
     this.pmMaxLivesRow = document.getElementById("pmMaxLivesRow");
     this.pmMaxLives = document.getElementById("pmMaxLives");
     this.pmGhostStartDelaySec = document.getElementById("pmGhostStartDelaySec");
+    this.pmBlinkyReleaseSec = document.getElementById("pmBlinkyReleaseSec");
+    this.pmPinkyReleaseSec = document.getElementById("pmPinkyReleaseSec");
+    this.pmInkyReleaseSec = document.getElementById("pmInkyReleaseSec");
+    this.pmClydeReleaseSec = document.getElementById("pmClydeReleaseSec");
     this.applyPacmanSettingsBtn = document.getElementById("applyPacmanSettingsBtn");
     this.gameStage = document.getElementById("gameStage");
     this.gameOverlay = document.getElementById("gameOverlay");
@@ -794,6 +810,10 @@ class MiniGamesApp {
     this.pmRestoreLifeEachLevel.checked = settings.restoreLifeEachLevel;
     this.pmMaxLives.value = String(settings.maxLives);
     this.pmGhostStartDelaySec.value = String(settings.ghostStartDelaySec);
+    this.pmBlinkyReleaseSec.value = String(settings.blinkyReleaseSec);
+    this.pmPinkyReleaseSec.value = String(settings.pinkyReleaseSec);
+    this.pmInkyReleaseSec.value = String(settings.inkyReleaseSec);
+    this.pmClydeReleaseSec.value = String(settings.clydeReleaseSec);
     this.syncPacmanSettingsFormVisibility();
   }
 
@@ -841,7 +861,11 @@ class MiniGamesApp {
       startingLives: Number(this.pmStartingLives.value),
       restoreLifeEachLevel: this.pmRestoreLifeEachLevel.checked,
       maxLives: Number(this.pmMaxLives.value),
-      ghostStartDelaySec: Number(this.pmGhostStartDelaySec.value)
+      ghostStartDelaySec: Number(this.pmGhostStartDelaySec.value),
+      blinkyReleaseSec: Number(this.pmBlinkyReleaseSec.value),
+      pinkyReleaseSec: Number(this.pmPinkyReleaseSec.value),
+      inkyReleaseSec: Number(this.pmInkyReleaseSec.value),
+      clydeReleaseSec: Number(this.pmClydeReleaseSec.value)
     });
 
     this.save.pacmanSettings = nextSettings;

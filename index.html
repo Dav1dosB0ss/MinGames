@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>МинИгры - Платформа мини-аркад</title>
-  <meta name="description" content="МинИгры: современная платформа браузерных мини-игр с достижениями, прогрессом и настройками.">
+  <meta name="description"
+    content="МинИгры: современная платформа браузерных мини-игр с достижениями, прогрессом и настройками.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@400;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@400;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body data-theme="dark">
   <div class="app-bg">
     <div class="bg-orb orb-a"></div>
@@ -84,23 +89,23 @@
           </div>
           <div class="preview-grid">
             <div class="preview-item">
-              <div class="preview-image" role="img" aria-label="Tetris preview placeholder">T</div>
+              <img class="preview-image" src="assets/images/tetris.png" alt="Tetris preview">
               <p>Tetris</p>
             </div>
             <div class="preview-item">
-              <div class="preview-image" role="img" aria-label="Minesweeper preview placeholder">M</div>
+              <img class="preview-image" src="assets/images/minesweeper.png" alt="Minesweeper preview">
               <p>Minesweeper</p>
             </div>
             <div class="preview-item">
-              <div class="preview-image" role="img" aria-label="Snake preview placeholder">S</div>
+              <img class="preview-image" src="assets/images/snake.png" alt="Snake preview">
               <p>Snake</p>
             </div>
             <div class="preview-item">
-              <div class="preview-image" role="img" aria-label="Flappy Bird preview placeholder">F</div>
+              <img class="preview-image" src="assets/images/flappybird.png" alt="Flappy Bird preview">
               <p>Flappy Bird</p>
             </div>
             <div class="preview-item">
-              <div class="preview-image" role="img" aria-label="Pac-Man preview placeholder">P</div>
+              <img class="preview-image" src="assets/images/pacman.png" alt="Pac-Man preview">
               <p>Pac-Man</p>
             </div>
           </div>
@@ -137,7 +142,7 @@
       <div class="games-layout">
         <section class="games-list glass">
           <article class="game-card active" data-game-id="tetris">
-            <div class="game-icon">T</div>
+            <img class="game-icon" src="assets/images/tetris.png" alt="Tetris">
             <div class="game-meta">
               <h3>Tetris</h3>
               <p>10x20 поле, тетрамино, уровни, очистка линий.</p>
@@ -147,7 +152,7 @@
           </article>
 
           <article class="game-card" data-game-id="minesweeper">
-            <div class="game-icon">M</div>
+            <img class="game-icon" src="assets/images/minesweeper.png" alt="Minesweeper">
             <div class="game-meta">
               <h3>Minesweeper</h3>
               <p>16x16, 40 мин, флаги, таймер и проверка победы.</p>
@@ -157,7 +162,7 @@
           </article>
 
           <article class="game-card" data-game-id="snake">
-            <div class="game-icon">S</div>
+            <img class="game-icon" src="assets/images/snake.png" alt="Snake">
             <div class="game-meta">
               <h3>Snake</h3>
               <p>Сетка, яблоки, рост змейки, ускорение и столкновения.</p>
@@ -167,7 +172,7 @@
           </article>
 
           <article class="game-card" data-game-id="flappybird">
-            <div class="game-icon">F</div>
+            <img class="game-icon" src="assets/images/flappybird.png" alt="Flappy Bird">
             <div class="game-meta">
               <h3>Flappy Bird</h3>
               <p>Гравитация, прыжок, трубы, подсчет очков за проход.</p>
@@ -177,7 +182,7 @@
           </article>
 
           <article class="game-card" data-game-id="pacman">
-            <div class="game-icon">P</div>
+            <img class="game-icon" src="assets/images/pacman.png" alt="Pac-Man">
             <div class="game-meta">
               <h3>Pac-Man</h3>
               <p>Лабиринт, точки, энерджайзеры и призраки с простым ИИ.</p>
@@ -230,7 +235,8 @@
 
           <div id="pacmanSettingsModal" class="pacman-settings-modal hidden" aria-hidden="true">
             <div class="pacman-settings-backdrop" data-close-pacman-settings></div>
-            <section class="pacman-settings-panel glass" role="dialog" aria-modal="true" aria-labelledby="pacmanSettingsTitle">
+            <section class="pacman-settings-panel glass" role="dialog" aria-modal="true"
+              aria-labelledby="pacmanSettingsTitle">
               <header class="pacman-settings-head">
                 <h4 id="pacmanSettingsTitle">Настройки Pac-Man</h4>
                 <button id="closePacmanSettingsBtn" class="icon-btn" type="button" aria-label="Закрыть">✕</button>
@@ -278,6 +284,26 @@
                 <label class="setting-row">
                   <span>Пауза призраков в начале жизни (сек)</span>
                   <input id="pmGhostStartDelaySec" type="number" min="0" max="8" step="0.5" value="3">
+                </label>
+
+                <label class="setting-row">
+                  <span>Задержка выхода Blinky (сек)</span>
+                  <input id="pmBlinkyReleaseSec" type="number" min="0" max="20" step="0.5" value="0">
+                </label>
+
+                <label class="setting-row">
+                  <span>Задержка выхода Pinky (сек)</span>
+                  <input id="pmPinkyReleaseSec" type="number" min="0" max="20" step="0.5" value="1.5">
+                </label>
+
+                <label class="setting-row">
+                  <span>Задержка выхода Inky (сек)</span>
+                  <input id="pmInkyReleaseSec" type="number" min="0" max="20" step="0.5" value="3">
+                </label>
+
+                <label class="setting-row">
+                  <span>Задержка выхода Clyde (сек)</span>
+                  <input id="pmClydeReleaseSec" type="number" min="0" max="20" step="0.5" value="3">
                 </label>
               </div>
 
@@ -446,7 +472,8 @@
   <script src="games/minesweeper.js" defer></script>
   <script src="games/snake.js" defer></script>
   <script src="games/flappybird.js" defer></script>
-  <script src="games/pacman.js" defer></script>
+  <script src="games/pacman.js" charset="utf-8" defer></script>
   <script src="main.js" defer></script>
 </body>
+
 </html>
